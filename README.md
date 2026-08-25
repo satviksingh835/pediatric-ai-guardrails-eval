@@ -1,6 +1,6 @@
 # Retrieval-Grounded Guardrails for Pediatric Clinical LLMs — Evaluation Harness
 
-[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+[![CI](https://github.com/satviksingh835/pediatric-ai-guardrails-eval/actions/workflows/ci.yml/badge.svg)](https://github.com/satviksingh835/pediatric-ai-guardrails-eval/actions/workflows/ci.yml)
 
 **An evaluation harness that tests whether a safety-checklist retrieval layer makes LLM pediatric clinical advice safer — and whether it behaves identically across patient demographics.**
 

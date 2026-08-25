@@ -1,0 +1,7 @@
+# Retrieval experiments (local embeddings; no inference API required)
+sentence-transformers==5.7.0
+torch==2.13.0
+numpy==2.2.6
+
+# Generation pipeline uses only the Python standard library
+# (urllib, csv, zipfile, xml.etree) - no extra dependencies needed.

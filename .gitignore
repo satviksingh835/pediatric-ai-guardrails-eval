@@ -1,28 +1,45 @@
-# ---- secrets: never commit ----
+# ============================================================
+# Secrets — never commit
+# ============================================================
 .env
 .env.*
 !.env.example
 *.key
 
-# ---- environments / caches ----
+# ============================================================
+# Environments / caches
+# ============================================================
 .venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .DS_Store
 
-# ---- collaboration-owned research material (embargoed) ----
-# The clinical case bank, guardrail corpus and study protocol belong to the
-# UAEU pediatric allergy/immunology collaboration and are unpublished.
-# See docs/DATA_AVAILABILITY.md before changing anything here.
+# ============================================================
+# Collaboration-owned research material (embargoed)
+#
+# The clinical case bank, guardrail checklist corpus and study
+# protocol are the unpublished property of the research
+# collaboration. Publishing them requires the clinical lead's
+# sign-off. See docs/DATA_AVAILABILITY.md.
+# ============================================================
 data/private/
-*.docx
-Pediatric_AI_Guardrails_*.xlsx
-Engineering_Data_Package_PILOT*.xlsx
-Guardrail_Corpus_v4_FINAL_LOCKED.xlsx
 
-# ---- raw run outputs (contain verbatim clinical advice) ----
-pilot_results.*
-probe_results.*
+# Belt-and-braces: these filenames are embargoed wherever they appear,
+# so a stray copy at the repo root can never be committed by accident.
+/*.xlsx
+/*.docx
+
+# ============================================================
+# Generated artifacts
+#
+# data/synthetic/ is rebuilt by tools/make_synthetic_fixture.py.
+# Kept out of git so no binary blobs are versioned; the generator
+# is committed instead. This is intentional, not an oversight.
+# ============================================================
+data/synthetic/
+**/inputs.json
+
+# Raw generation outputs embed full vignettes and verbatim model
+# clinical advice from the unpublished study.
 results/raw/
-data/private/inputs.json

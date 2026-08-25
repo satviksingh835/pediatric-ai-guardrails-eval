@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # Fast gate: the prompt-assembly and fairness-logic checks need no third-party
+  # packages at all (the generation pipeline is standard library only), so this
+  # job installs nothing and finishes in seconds.
+  tests:
+    name: tests (stdlib only)
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: .
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Generate the synthetic fixture
+        run: python tools/make_synthetic_fixture.py
+
+      - name: Freeze inputs from the fixture
+        run: python -m guardrail_eval.freeze_inputs
+
+      - name: Prompt-assembly and fairness-logic checks
+        run: python tests/test_prompt_assembly.py
+
+      - name: Results doc is in sync with the manifests
+        run: python tools/make_results_doc.py --check
+
+  # Slower gate: the retrieval benchmark needs sentence-transformers and torch,
+  # and downloads two encoders on first run. Both caches are keyed so repeat
+  # runs skip the download.
+  retrieval:
+    name: retrieval benchmark (fixture)
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: .
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Cache sentence-transformer encoders
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-${{ hashFiles('requirements.txt') }}
+
+      - name: Generate the synthetic fixture
+        run: python tools/make_synthetic_fixture.py
+
+      - name: Retrieval benchmark on the fixture
+        run: python -m guardrail_eval.run_frozen_spec
+
+      - name: Alignment harness refuses a non-study corpus
+        # The harness fingerprints the study corpus and must decline to emit
+        # numbers for the fixture. Asserting the refusal keeps that guard honest.
+        run: |
+          out=$(python -m guardrail_eval.alignment_check 2>&1) || true
+          echo "$out"
+          echo "$out" | grep -q "STOP:" \
+            && echo "OK: harness correctly refused the fixture" \
+            || { echo "FAIL: harness should have refused the fixture"; exit 1; }

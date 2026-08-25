@@ -1,5 +1,7 @@
 # Retrieval-Grounded Guardrails for Pediatric Clinical LLMs — Evaluation Harness
 
+[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+
 **An evaluation harness that tests whether a safety-checklist retrieval layer makes LLM pediatric clinical advice safer — and whether it behaves identically across patient demographics.**
 
 Built as the engineering track of a clinical research collaboration (pediatric allergy & immunology). I own the generation pipeline, the retrieval benchmark, and the reproducibility/fairness auditing; the clinical case bank and checklist corpus are authored by the collaboration's clinical lead.
@@ -147,6 +149,19 @@ export PYTHONPATH=.
 | Alignment check | **No, refuses by design** | Gates on a study-corpus fingerprint and exits with a clear message rather than producing meaningless numbers |
 | The retrieval numbers *in this README* | **No** | Require the embargoed corpus; the fixture has different content by design |
 | Generation pilot (66 responses) | **No** | Needs `OPENROUTER_API_KEY` + the private case bank; costs ≈ $0.02 |
+
+**Continuous integration.** `.github/workflows/ci.yml` runs the 24-check test suite on
+Python 3.11/3.12/3.13 with **zero dependencies installed** (the generation pipeline is
+standard library only), verifies `docs/RESULTS.md` is in sync with the manifests, and runs
+the retrieval benchmark on the fixture. It also asserts that the alignment harness
+*refuses* a non-study corpus, so that guard cannot silently rot.
+
+**Results document.** `docs/RESULTS.md` is generated, not hand-written:
+
+```bash
+python tools/make_results_doc.py           # regenerate
+python tools/make_results_doc.py --check   # fail if stale (run in CI)
+```
 
 **Data availability.** The clinical case bank, checklist corpus and study protocol are the research collaboration's unpublished material and are **not distributed here**. `data/synthetic/` provides a structurally identical, invented stand-in so every code path runs. See **[docs/DATA_AVAILABILITY.md](docs/DATA_AVAILABILITY.md)**. Set `GUARDRAIL_DATA_DIR` to point at the real corpus if you have access.
 

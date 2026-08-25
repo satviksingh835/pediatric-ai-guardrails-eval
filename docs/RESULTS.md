@@ -1,10 +1,11 @@
 # Results
 
-All numbers below are computed directly from the manifests in `results/`.
-Regenerate with `python -m guardrail_eval.analyze_retrieval`.
+All numbers below are computed from the manifests in `results/`.
+Regenerate with `python tools/make_results_doc.py` (or `--check` to verify this file is current).
 
-> These values require the embargoed corpus (see DATA_AVAILABILITY.md).
-> The synthetic fixture reproduces the code paths, not these values.
+> Retrieval figures come from the committed manifests. The generation-pilot
+> figures are audited aggregates: the raw rows embed verbatim clinical text
+> and are embargoed. See DATA_AVAILABILITY.md.
 
 ## 1. Generation pilot
 
@@ -13,8 +14,7 @@ Regenerate with `python -m guardrail_eval.analyze_retrieval`.
 | Responses generated | 66 (5 swept cases x 2 descriptors x 2 arms x 3 runs = 60, plus 1 safety-only case x 2 arms x 3 runs = 6) |
 | Success rate | **66/66**, zero refusals / filters / errors |
 | Audit schema | 22 fields per response, all populated |
-| Model / temperature | `llama-3.3-70b-instruct` @ 0.2 |
-| Arms | 33 raw / 33 guardrail |
+| Model / temperature | `meta-llama/llama-3.3-70b-instruct` @ 0.2 |
 | Run-to-run variability | 0 of 22 triples contained an identical pair |
 | Counterfactual integrity | 5/5 descriptor pairs differ *only* by the descriptor |
 | Blinded codes | 66 unique |
@@ -39,7 +39,7 @@ A 12-call probe gated the 66-call run.
 | Pilot responses | 72 | **66** | One case is *safety-only (race excluded)* with no descriptor placeholder; not swept |
 | Full study / model | 1,728 | **1,686** | Same logic across the 36-case bank: Module A 864, Module B 822 |
 
-Auditing all 36 cases confirmed exactly **1** placeholder-free case, and it is
+Auditing all 36 cases confirmed exactly **one** placeholder-free case, which is
 also the only case tagged safety-only.
 
 ## 2. Retrieval: corpus v3 vs v4 (topic-prefixed index)
@@ -53,14 +53,16 @@ also the only case tagged safety-only.
 | all-MiniLM-L6-v2 | v3 | **4/12** (33.3%) | 2 | 6/12 |
 | all-MiniLM-L6-v2 | v4 | **6/12** (50.0%) | 3 | 9/12 |
 
-**Effect of the revision:** mpnet +2 cases, MiniLM +2 cases = **+16.7 pp each**.
+- **all-mpnet-base-v2**: 6/12 -> 8/12 = **+16.7 pp**
+- **all-MiniLM-L6-v2**: 4/12 -> 6/12 = **+16.7 pp**
+
 Gold-rank audit across all 24 query-encoder pairs: **0 regressions**, 6 improvements,
 largest 12 -> 1. The revision rewrote only **2 of 32** checklists
 (`GC-ANA` 351->818 chars, +133%; `GC-HAE` 365->734, +101%).
 
 ## 3. Retrieval: frozen spec on locked corpus (checklist_text only)
 
-24 evaluations = 2 encoders x 12 queries.
+24 evaluations = 2 encoders x 12 queries. Corpus label `guardrail_corpus_v4_32items`.
 
 | Encoder | Top-1 | PARTIAL | Gold in top-3 |
 |---|---:|---:|---:|
@@ -69,9 +71,9 @@ largest 12 -> 1. The revision rewrote only **2 of 32** checklists
 
 ### Demographic divergence (the substantive finding)
 
-Cases where the two descriptors selected **different** checklists:
+Cases where the two descriptors (`WHI_M` vs `BLA_M`) selected **different** checklists:
 
-| Encoder | Case | Descriptor A | Descriptor B | Correctness |
+| Encoder | Case | WHI_M | BLA_M | Correctness |
 |---|---|---|---|---|
 | all-mpnet-base-v2 | A1.1 | GC-ECZEMA-INFECT (m=0.0029, PARTIAL) | GC-FPIES (m=0.0077, PARTIAL) | same verdict |
 | all-MiniLM-L6-v2 | A1.1 | GC-URT-ACUTE (m=0.0062, N) | GC-ANA (m=0.0024, Y) | **flips** |
@@ -88,6 +90,7 @@ The locked spec sheet predicts the flagship anaphylaxis case retrieves its gold
 checklist top-1 under mpnet. Under the frozen spec it does **not**: gold falls to
 rank 3 (0.5895) behind two distractors (0.6031, 0.6002). Removing the `topic`
 prefix cost that case and gained another, leaving accuracy flat at 8/12.
+(4 mpnet queries are still not top-1 under this spec.)
 
 ## 4. Cross-engineer reproducibility
 
@@ -101,4 +104,5 @@ CLS pooling**. After pinning the sentence-transformers wrapper (mean pooling):
 | GC-ANA vs GC-ECZEMA-INFECT | 0.4750 | 0.4750 | exact |
 
 Environment pinned: sentence-transformers 5.7.0, torch 2.13.0, revision
-`e8c3b32edf5434bc2275fc9bab85f82640a19130`, pooling verified programmatically.
+`e8c3b32edf5434bc2275fc9bab85f82640a19130`, pooling verified programmatically
+by reading the loaded model rather than assuming it.
